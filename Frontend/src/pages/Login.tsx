@@ -37,25 +37,26 @@ const Login: React.FC = () => {
     e.preventDefault();
     setError("");
     setIsLoading(true);
-
+  
     try {
-      const userData = await LoginAPI(email, password);
-      setUser(userData);
-      localStorage.setItem("token", userData.token);
+      const response = await LoginAPI(email, password);
+      const { user, token } = response;
+  
+      setUser(user); // Store combined user and PlayerState in userAtom
+      localStorage.setItem("token", token); // Save token for authenticated requests
+  
       setSnackbarOpen(true);
-
-      setTimeout(() => navigate("/dashboard"), 1000);
+      navigate("/dashboard");
     } catch (err: any) {
       console.error("Login error:", err);
       setError(
-        err.response?.data?.message ||
-          "Invalid email or password. Please try again."
+        err.response?.data?.message || "Invalid email or password. Please try again."
       );
     } finally {
       setIsLoading(false);
     }
   };
-
+  
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-800 via-gray-900 to-black flex items-center justify-center p-4">
       <div className="bg-gradient-to-br from-teal-900 to-gray-900 p-6 rounded-xl shadow-lg max-w-md w-full text-white">
