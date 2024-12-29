@@ -12,10 +12,13 @@ import {
 } from "@mui/material";
 import { Email, Lock, Person, Visibility, VisibilityOff } from "@mui/icons-material";
 import Logo from "../assets/LogoChess.png";
+import { useSetRecoilState } from "recoil";
+import { userAtom } from "../atoms/userAtom";
 
 const Register: React.FC = () => {
   // State management
-  const [name, setName] = useState("");
+  const setUser = useSetRecoilState(userAtom);
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -46,11 +49,14 @@ const Register: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const response = await RegisterAPI(name, email, password);
-      setSuccessMessage(response.message || "Registration successful!");
+      const response = await RegisterAPI(username, email, password);
+      const { user, token } = response;
+  
+      setUser(user); // Store combined user and PlayerState in userAtom
+      localStorage.setItem("token", token); // Save token for authenticated requests
+  
       setSnackbarOpen(true);
-
-      setTimeout(() => navigate("/login"), 2000);
+      navigate("/dashboard");
     } catch (err: any) {
       console.error("Registration error:", err);
       setError(
@@ -90,8 +96,8 @@ const Register: React.FC = () => {
               fullWidth
               required
               variant="outlined"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
               placeholder="Enter your full name"
               InputProps={{
                 startAdornment: (
