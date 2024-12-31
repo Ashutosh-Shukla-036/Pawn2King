@@ -43,6 +43,7 @@ const Login: React.FC = () => {
       const { user, token } = response;
   
       setUser(user); // Store combined user and PlayerState in userAtom
+      localStorage.setItem("user",user);
       localStorage.setItem("token", token); // Save token for authenticated requests
   
       setSnackbarOpen(true);
