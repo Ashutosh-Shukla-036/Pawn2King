@@ -7,16 +7,13 @@ import {
   Alert,
   Snackbar,
   Box,
-  TextField,
   Typography,
-  IconButton,
-  InputAdornment,
 } from "@mui/material";
-import { Email, Lock, Visibility, VisibilityOff } from "@mui/icons-material";
+import { HiOutlineMail, HiOutlineLockClosed } from "react-icons/hi";
+import { AiFillEye, AiFillEyeInvisible } from "react-icons/ai";
 import Logo from "../assets/LogoChess.png";
 
 const Login: React.FC = () => {
-  // State management
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -24,44 +21,44 @@ const Login: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
 
-  // Recoil and navigation hooks
   const setUser = useSetRecoilState(userAtom);
   const navigate = useNavigate();
 
-  // Handlers
   const handleSnackbarClose = () => setSnackbarOpen(false);
   const togglePasswordVisibility = () => setShowPassword(!showPassword);
 
-  // Submit login form
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setIsLoading(true);
-  
+
     try {
       const response = await LoginAPI(email, password);
       const { user, token } = response;
-  
-      setUser(user); // Store combined user and PlayerState in userAtom
-      localStorage.setItem("user",user);
-      localStorage.setItem("token", token); // Save token for authenticated requests
-  
+
+      setUser(user);
+      localStorage.setItem("user", JSON.stringify(user));
+      localStorage.setItem("token", token);
+
       setSnackbarOpen(true);
       navigate("/dashboard");
     } catch (err: any) {
-      console.error("Login error:", err);
       setError(
-        err.response?.data?.message || "Invalid email or password. Please try again."
+        err.response?.data?.message || err.message || "Invalid email or password. Please try again."
       );
     } finally {
       setIsLoading(false);
     }
   };
-  
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-800 via-gray-900 to-black flex items-center justify-center p-4">
-      <div className="bg-gradient-to-br from-teal-900 to-gray-900 p-6 rounded-xl shadow-lg max-w-md w-full text-white">
-        {/* Logo and Branding */}
+      <div className="bg-gradient-to-br from-teal-900 to-gray-900 p-6 rounded-xl shadow-lg max-w-md w-full text-white relative">
+        {/* Glow Effects */}
+        <div className="absolute -top-4 -left-4 w-32 h-32 bg-orange-500 blur-3xl opacity-30"></div>
+        <div className="absolute -bottom-4 -right-4 w-32 h-32 bg-teal-500 blur-3xl opacity-30"></div>
+
+        {/* Logo */}
         <div className="flex flex-col items-center mb-6">
           <img
             src={Logo}
@@ -77,97 +74,75 @@ const Login: React.FC = () => {
         </div>
 
         {/* Welcome Message */}
-        <Typography variant="h6" className="text-yellow-400 mb-4">
+        <Typography variant="h6" className="text-yellow-400 mb-4 text-center">
           Welcome back! Ready to play some chess?
         </Typography>
 
-        <br />
-
-        {/* Login Form */}
         <form onSubmit={handleSubmit}>
-          {/* Email Field */}
-          <Box className="mb-4">
-            <TextField
-              label="Email"
-              type="email"
-              fullWidth
-              required
-              variant="outlined"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Enter your email"
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Email className="text-white" />
-                  </InputAdornment>
-                ),
-              }}
-              sx={{
-                "& .MuiInputBase-root": {
-                  backgroundColor: "rgba(255, 255, 255, 0.1)",
-                  color: "white",
-                },
-                "& .MuiInputLabel-root": { color: "white" },
-                "& .MuiOutlinedInput-root": {
-                  "& fieldset": { borderColor: "gray" },
-                  "&:hover fieldset": { borderColor: "white" },
-                  "&.Mui-focused fieldset": { borderColor: "white" },
-                },
-                "& input::placeholder": { color: "white" },
-              }}
-            />
+          <Box
+            className="p-4 rounded-lg shadow-lg bg-white/10 border border-gray-600"
+            component="div"
+          >
+            {/* Email Field */}
+            <div className="mb-4 relative">
+              <label className="block text-white font-medium mb-2">
+                Email <span className="text-red-400">*</span>
+              </label>
+              <div className="relative">
+                <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <HiOutlineMail className="text-white/80 h-6 w-6" />
+                </span>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full p-3 pl-12 border border-orange-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white/80 shadow-md dark:bg-gray-900 dark:border-gray-700 dark:focus:ring-orange-600 dark:text-white hover:shadow-orange-500/50"
+                  placeholder="Enter your email"
+                  required
+                  aria-label="Email"
+                />
+              </div>
+            </div>
+
+            {/* Password Field */}
+            <div className="relative">
+              <label className="block text-white font-medium mb-2">
+                Password <span className="text-red-400">*</span>
+              </label>
+              <div className="relative">
+                <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <HiOutlineLockClosed className="text-white/80 h-6 w-6" />
+                </span>
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full p-3 pl-12 border border-orange-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white/80 shadow-md dark:bg-gray-900 dark:border-gray-700 dark:focus:ring-orange-600 dark:text-white hover:shadow-orange-500/50"
+                  placeholder="Enter your password"
+                  required
+                  aria-label="Password"
+                />
+                <span
+                  onClick={togglePasswordVisibility}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer"
+                  role="button"
+                  aria-label="Toggle password visibility"
+                >
+                  {showPassword ? (
+                    <AiFillEye className="text-white/80 h-6 w-6" />
+                  ) : (
+                    <AiFillEyeInvisible className="text-white/80 h-6 w-6" />
+                  )}
+                </span>
+              </div>
+            </div>
           </Box>
 
-          {/* Password Field */}
-          <Box className="mb-4">
-            <TextField
-              label="Password"
-              type={showPassword ? "text" : "password"}
-              fullWidth
-              required
-              variant="outlined"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password"
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Lock className="text-white" />
-                  </InputAdornment>
-                ),
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      onClick={togglePasswordVisibility}
-                      edge="end"
-                      className="text-white"
-                    >
-                      {showPassword ? <VisibilityOff /> : <Visibility />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
-              sx={{
-                "& .MuiInputBase-root": {
-                  backgroundColor: "rgba(255, 255, 255, 0.1)",
-                  color: "white",
-                },
-                "& .MuiInputLabel-root": { color: "white" },
-                "& .MuiOutlinedInput-root": {
-                  "& fieldset": { borderColor: "gray" },
-                  "&:hover fieldset": { borderColor: "white" },
-                  "&.Mui-focused fieldset": { borderColor: "white" },
-                },
-                "& input::placeholder": { color: "white" },
-              }}
-            />
-          </Box>
-
+          <br />
           {/* Forgot Password */}
           <Typography
             variant="body2"
-            className="text-indigo-400 cursor-pointer hover:underline text-right"
+            className="text-indigo-400 cursor-pointer hover:underline text-right mt-2"
             onClick={() => navigate("/forgot-password")}
           >
             Forgot Password?
@@ -219,7 +194,6 @@ const Login: React.FC = () => {
         </form>
 
         <br />
-
         {/* Register Redirect */}
         <Typography
           variant="body2"
@@ -236,16 +210,13 @@ const Login: React.FC = () => {
           </Typography>
         </Box>
 
-        {/* Snackbar */}
+        {/* Snackbar for success */}
         <Snackbar
           open={snackbarOpen}
           onClose={handleSnackbarClose}
           message="Login successful!"
           autoHideDuration={3000}
           anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-          ContentProps={{
-            role: "alert",
-          }}
         />
       </div>
     </div>
