@@ -8,8 +8,8 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 
 const Home = lazy(() => import('./pages/Home'));
-const Dashboard = lazy(() => import('./pages/Dashboard')); 
-const Profile = lazy(() => import('./pages/Profile')); 
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Profile = lazy(() => import('./pages/Profile'));
 
 function App() {
   const user = useRecoilValue(userAtom);
@@ -26,17 +26,19 @@ function App() {
         {user ? (
           <>
             <Navbar />
-            <Routes>
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/profile" element={<Profile />} />
-              {/* Add more authenticated routes here */}
-            </Routes>
+            <div className="pt-16"> {/* Add padding-top to account for fixed navbar */}
+              <Routes>
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/profile" element={<Profile />} />
+                {/* Add more authenticated routes here */}
+              </Routes>
+            </div>
           </>
         ) : (
           <Routes>
             <Route path="/" element={<Home />} />
-            <Route path='/login' element={<Login />}></Route>
-            <Route path='/register' element={<Register />}></Route>
+            <Route path='/login' element={<Login />} />
+            <Route path='/register' element={<Register />} />
           </Routes>
         )}
       </Suspense>
