@@ -23,6 +23,8 @@ const Register: React.FC = () => {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [snackbarSeverity, setSnackbarSeverity] = useState<"success" | "error">("success");
 
   const navigate = useNavigate();
 
@@ -35,7 +37,9 @@ const Register: React.FC = () => {
     setError("");
 
     if (password !== confirmPassword) {
-      setError("Passwords do not match.");
+      setSnackbarMessage("Passwords do not match.");
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
       return;
     }
 
@@ -47,13 +51,18 @@ const Register: React.FC = () => {
 
       setUser(user);
       localStorage.setItem("token", token);
+      
+      setSnackbarMessage("Registration successful! Redirecting to your dashboard.");
+      setSnackbarSeverity("success");
       setSnackbarOpen(true);
-      navigate("/dashboard");
+
+      setTimeout(() => navigate("/dashboard"), 2000); // Redirect after Snackbar message is shown
     } catch (err: any) {
-      setError(
-        err.response?.data?.message ||
-          "Registration failed. Please check your details and try again."
+      setSnackbarMessage(
+        err.response?.data?.message || "Registration failed. Please check your details and try again."
       );
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
     } finally {
       setIsLoading(false);
     }
@@ -214,7 +223,7 @@ const Register: React.FC = () => {
           Already registered? Click here to login.
         </Typography>
 
-        {/* Snackbar for success */}
+        {/* Snackbar for success or error */}
         <Snackbar
           open={snackbarOpen}
           autoHideDuration={6000}
@@ -223,10 +232,10 @@ const Register: React.FC = () => {
         >
           <Alert
             onClose={handleSnackbarClose}
-            severity="success"
+            severity={snackbarSeverity}
             sx={{ width: "100%" }}
           >
-            Registration successful! Redirecting to your dashboard.
+            {snackbarMessage}
           </Alert>
         </Snackbar>
       </div>
