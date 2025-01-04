@@ -3,12 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useSetRecoilState } from "recoil";
 import { userAtom } from "../atoms/userAtom";
 import { LoginAPI } from "../api_calls/LoginAPI";
-import {
-  Alert,
-  Snackbar,
-  Box,
-  Typography,
-} from "@mui/material";
+import { Alert, Snackbar, Box, Typography } from "@mui/material";
 import { HiOutlineMail, HiOutlineLockClosed } from "react-icons/hi";
 import { AiFillEye, AiFillEyeInvisible } from "react-icons/ai";
 import Logo from "../assets/LogoChess.png";
@@ -17,9 +12,10 @@ const Login: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState(""); // For backend message
+  const [snackbarSeverity, setSnackbarSeverity] = useState<"success" | "error">("success"); // Snackbar type
 
   const setUser = useSetRecoilState(userAtom);
   const navigate = useNavigate();
@@ -29,23 +25,29 @@ const Login: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
     setIsLoading(true);
 
     try {
       const response = await LoginAPI(email, password);
-      const { user, token } = response;
+      const { user, token, message } = response; // Assuming the backend sends a 'message'
 
       setUser(user);
       localStorage.setItem("user", JSON.stringify(user));
       localStorage.setItem("token", token);
 
+      // Show success message
+      setSnackbarMessage(message || "Login successful!");
+      setSnackbarSeverity("success");
       setSnackbarOpen(true);
-      navigate("/dashboard");
+
+      navigate("/dashboard"); // Navigate after showing the message
     } catch (err: any) {
-      setError(
-        err.response?.data?.message || err.message || "Invalid email or password. Please try again."
+      // Show error message from backend
+      setSnackbarMessage(
+        err.response?.data?.message || "Invalid email or password. Please try again."
       );
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
     } finally {
       setIsLoading(false);
     }
@@ -148,13 +150,6 @@ const Login: React.FC = () => {
             Forgot Password?
           </Typography>
 
-          {/* Error Message */}
-          {error && (
-            <Alert severity="error" className="mt-4 mb-4">
-              {error}
-            </Alert>
-          )}
-
           {/* Submit Button */}
           <button
             type="submit"
@@ -210,14 +205,25 @@ const Login: React.FC = () => {
           </Typography>
         </Box>
 
-        {/* Snackbar for success */}
+        {/* Snackbar for all messages */}
         <Snackbar
           open={snackbarOpen}
           onClose={handleSnackbarClose}
-          message="Login successful!"
           autoHideDuration={3000}
           anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-        />
+        >
+          <Alert
+            onClose={handleSnackbarClose}
+            severity={snackbarSeverity}
+            sx={{
+              bgcolor: snackbarSeverity === "success" ? "green" : "red",
+              color: "white",
+              fontWeight: "bold",
+            }}
+          >
+            {snackbarMessage}
+          </Alert>
+        </Snackbar>
       </div>
     </div>
   );
