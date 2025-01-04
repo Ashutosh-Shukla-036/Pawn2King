@@ -1,47 +1,87 @@
-import { Suspense, lazy } from 'react';
-import { Route, Routes } from 'react-router-dom';
-import Footer from './components/Footer';
-import Navbar from './components/Navbar';
+import { Route, Routes, Navigate } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
 import { userAtom } from './atoms/userAtom';
+import Footer from './components/Footer';
+import Navbar from './components/Navbar';
+import Home from './pages/Home';
+import Dashboard from './pages/Dashboard';
+import Profile from './pages/Profile';
 import Login from './pages/Login';
 import Register from './pages/Register';
 
-const Home = lazy(() => import('./pages/Home'));
-const Dashboard = lazy(() => import('./pages/Dashboard'));
-const Profile = lazy(() => import('./pages/Profile'));
+// ProtectedRoute Component
+const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
+  const user = useRecoilValue(userAtom);
+  return user ? children : <Navigate to="/login" replace />;
+};
+
+// PublicRoute Component
+const PublicRoute = ({ children }: { children: JSX.Element }) => {
+  const user = useRecoilValue(userAtom);
+  return user ? <Navigate to="/dashboard" replace /> : children;
+};
 
 function App() {
   const user = useRecoilValue(userAtom);
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <Suspense
-        fallback={
-          <div className="flex items-center justify-center h-screen">
-            <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-gray-900"></div>
-          </div>
-        }
-      >
-        {user ? (
-          <>
-            <Navbar />
-            <div className="pt-16"> {/* Add padding-top to account for fixed navbar */}
-              <Routes>
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/profile" element={<Profile />} />
-                {/* Add more authenticated routes here */}
-              </Routes>
-            </div>
-          </>
-        ) : (
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path='/login' element={<Login />} />
-            <Route path='/register' element={<Register />} />
-          </Routes>
-        )}
-      </Suspense>
+      <Navbar />
+      <div className="pt-16"> {/* Add padding-top to account for fixed navbar */}
+        <Routes>
+          {/* Public Routes */}
+          <Route
+            path="/"
+            element={
+              <PublicRoute>
+                <Home />
+              </PublicRoute>
+            }
+          />
+          <Route
+            path="/login"
+            element={
+              <PublicRoute>
+                <Login />
+              </PublicRoute>
+            }
+          />
+          <Route
+            path="/register"
+            element={
+              <PublicRoute>
+                <Register />
+              </PublicRoute>
+            }
+          />
+
+          {/* Protected Routes */}
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Catch-All */}
+          <Route
+            path="*"
+            element={
+              <Navigate to={user ? "/dashboard" : "/"} replace />
+            }
+          />
+        </Routes>
+      </div>
       <Footer />
     </div>
   );
