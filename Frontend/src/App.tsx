@@ -8,6 +8,7 @@ import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import { ScrollToTop } from './components/ScrollToTop';
 
 // ProtectedRoute Component
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
@@ -27,6 +28,7 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-100">
       <Navbar />
+      <ScrollToTop />
       <div className="pt-16"> {/* Add padding-top to account for fixed navbar */}
         <Routes>
           {/* Public Routes */}
