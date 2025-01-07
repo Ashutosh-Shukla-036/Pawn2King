@@ -1,0 +1,198 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Enums for consistency
+enum GameStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  ABANDONED
+}
+
+enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+enum BadgeType {
+  MASTER
+  BEGINNER
+  VICTORY
+}
+
+enum Player {
+  WHITE
+  BLACK
+}
+
+model User {
+  id                   Int           @id @default(autoincrement())
+  username             String
+  email                String        @unique
+  password             String
+  role                 String        @default("user")
+  createdAt            DateTime      @default(now())
+
+  // Relationships
+  gamesOne             Game[]        @relation("PlayerOneGames")
+  gamesTwo             Game[]        @relation("PlayerTwoGames")
+  playerStats          PlayerStats[] 
+  leaderboard          Leaderboard[]
+  subscription         Subscription[]
+  pgnUploads           PGNUpload[]
+
+  // Friendships
+  sentFriendRequests   Friendship[]  @relation("SentFriendRequests")
+  receivedFriendRequests Friendship[] @relation("ReceivedFriendRequests")
+
+  // Challenges
+  dailyChallenge       DailyChallenge[]
+
+  // Game history - wins, losses, draws
+  wonGames             Game[]        @relation("Winner")
+}
+
+model Game {
+  id           Int       @id @default(autoincrement())
+  roomId       String    @unique @default(uuid())
+  playerOne    User      @relation("PlayerOneGames", fields: [playerOneId], references: [id])
+  playerOneId  Int
+  playerTwo    User?     @relation("PlayerTwoGames", fields: [playerTwoId], references: [id])
+  playerTwoId  Int?
+  status       GameStatus @default(PENDING)  // Use the GameStatus enum for status
+  fenState     String
+  moves        Move[]
+  createdAt    DateTime  @default(now())
+  winner       User?     @relation("Winner", fields: [winnerId], references: [id])
+  winnerId     Int?
+
+  tournament   Tournament[] @relation("TournamentGames")
+  eventLog     EventLog[]
+
+  @@index([roomId])
+  @@index([playerOneId])
+  @@index([playerTwoId])
+}
+
+model Move {
+  id           Int       @id @default(autoincrement())
+  game         Game      @relation(fields: [gameId], references: [id])
+  gameId       Int
+  notation     String
+  timestamp    DateTime  @default(now())
+  moveNumber   Int
+  gameState    String?   // Store the state of the game at this move (e.g., FEN string)
+  analysis     Analysis[]
+  player       Player    // 'WHITE' or 'BLACK'
+  moveType     String?   // Optional: e.g., "castle", "promotion"
+  promotionPiece String? // Optional: e.g., "queen", "rook"
+  elapsedSeconds Int?    // Optional: Time taken to make the move
+
+  @@unique([gameId, moveNumber]) // Prevent duplicate moves for the same game and sequence
+  @@index([gameId, moveNumber])  // Optimize queries by game and move order
+}
+
+model Analysis {
+  id         Int       @id @default(autoincrement())
+  move       Move      @relation(fields: [moveId], references: [id])
+  moveId     Int
+  quality    String
+  comment    String?
+}
+
+model Tournament {
+  id          Int        @id @default(autoincrement())
+  name        String
+  description String?
+  startDate   DateTime
+  endDate     DateTime?
+  status      String     @default("upcoming") // e.g., "ongoing", "completed"
+  games       Game[]     @relation("TournamentGames")
+
+  @@index([startDate])
+}
+
+model PlayerStats {
+  id          Int       @id @default(autoincrement())
+  user        User      @relation(fields: [userId], references: [id])
+  userId      Int
+  gamesPlayed Int       @default(0)
+  wins        Int       @default(0)
+  losses      Int       @default(0)
+  draws       Int       @default(0)
+  rating      Float     @default(1200) // Elo or similar rating system
+}
+
+model EventLog {
+  id         Int       @id @default(autoincrement())
+  game       Game      @relation(fields: [gameId], references: [id])
+  gameId     Int
+  eventType  String    // e.g., "player_joined", "move_made", "checkmate"
+  details    String?   // Additional data about the event
+  timestamp  DateTime  @default(now())
+}
+
+model Leaderboard {
+  id         Int       @id @default(autoincrement())
+  user       User      @relation(fields: [userId], references: [id])
+  userId     Int
+  rank       Int
+  rating     Float
+  timestamp  DateTime  @default(now())
+
+  @@index([userId])
+}
+
+model Subscription {
+  id         Int       @id @default(autoincrement())
+  user       User      @relation(fields: [userId], references: [id])
+  userId     Int
+  type       String    // e.g., "free", "premium"
+  startDate  DateTime  @default(now())
+  endDate    DateTime?
+  isActive   Boolean   @default(true)
+}
+
+model PGNUpload {
+  id         Int       @id @default(autoincrement())
+  user       User      @relation(fields: [userId], references: [id])
+  userId     Int
+  pgnContent String
+  uploadedAt DateTime  @default(now())
+}
+
+model Friendship {
+  id         Int       @id @default(autoincrement())
+  user       User      @relation("SentFriendRequests", fields: [userId], references: [id])
+  userId     Int
+  friend     User      @relation("ReceivedFriendRequests", fields: [friendId], references: [id])
+  friendId   Int
+  status     FriendshipStatus @default(PENDING)
+  createdAt  DateTime  @default(now())
+}
+
+model Badge {
+  id         Int       @id @default(autoincrement())
+  name       BadgeType // e.g., "Master", "Beginner", "Victory"
+  description String?
+  unlockedAt DateTime @default(now())
+}
+
+model DailyChallenge {
+  id          Int       @id @default(autoincrement())
+  description String    // e.g., "Win 3 games today"
+  points      Int
+  completed   Boolean   @default(false)
+  user        User      @relation(fields: [userId], references: [id])
+  userId      Int
+}
