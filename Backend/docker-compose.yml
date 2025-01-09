@@ -1,0 +1,12 @@
+version: '3.8'
+services:
+  backend:
+    image: pawn2king_backend
+    build:
+      context: .
+      dockerfile: Dockerfile 
+    ports:
+      - "5432:5432"
+    environment:
+      - DATABASE_URL=${DATABASE_URL} # Provide the database URL in the .env file
+    restart: on-failure 
