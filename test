@@ -1,0 +1,110 @@
+// server.js
+import express from "express";
+import shortid from "shortid";
+import validUrl from "valid-url";
+
+const app = express();
+app.use(express.json());
+
+const PORT = process.env.PORT || 5000;
+const BASE = process.env.BASE_URL || `http://localhost:${PORT}`;
+
+// In-memory store
+// Map<shortCode, { longUrl, shortCode, expiresAt, clicks, maxClicks, createdAt }>
+const store = new Map();
+
+const now = () => Date.now();
+const minutesToMs = (m) => m * 60 * 1000;
+
+// Create short URL
+app.post("/shorten", (req, res) => {
+  const { longUrl, shortCode, ttlMinutes, maxClicks } = req.body;
+
+  if (!longUrl) return res.status(400).json({ error: "longUrl required" });
+  if (!validUrl.isWebUri(longUrl)) {
+    return res.status(400).json({ error: "Invalid URL" });
+  }
+
+  const code = shortCode?.trim() || shortid.generate();
+  if (store.has(code)) {
+    return res.status(400).json({ error: "Shortcode already exists" });
+  }
+
+  const ttl = Number.isFinite(ttlMinutes) ? Number(ttlMinutes) : 30; // default 30 min
+  const expiry = now() + minutesToMs(ttl);
+  const created = now();
+
+  const data = {
+    longUrl,
+    shortCode: code,
+    expiresAt: new Date(expiry).toISOString(), // ISO 8601
+    clicks: 0,
+    maxClicks: maxClicks ?? null,
+    createdAt: new Date(created).toISOString(), // ISO 8601
+  };
+
+  store.set(code, data);
+
+  res.status(201).json({
+    shortLink: `${BASE}/${code}`,
+    ...data,
+  });
+});
+
+// Redirect
+app.get("/:code", (req, res) => {
+  const { code } = req.params;
+  const data = store.get(code);
+  if (!data) return res.status(404).json({ error: "URL not found" });
+
+  if (new Date() > new Date(data.expiresAt)) {
+    return res.status(410).json({ error: "Link expired" });
+  }
+
+  if (data.maxClicks !== null && data.clicks >= data.maxClicks) {
+    return res.status(410).json({ error: "Max clicks reached" });
+  }
+
+  data.clicks++;
+  return res.redirect(data.longUrl);
+});
+
+// Stats
+app.get("/stats/:code", (req, res) => {
+  const { code } = req.params;
+  const data = store.get(code);
+  if (!data) return res.status(404).json({ error: "URL not found" });
+
+  res.json({
+    longUrl: data.longUrl,
+    shortLink: `${BASE}/${data.shortCode}`,
+    shortCode: data.shortCode,
+    clicks: data.clicks,
+    maxClicks: data.maxClicks,
+    expiresAt: data.expiresAt,   // already ISO
+    createdAt: data.createdAt,   // already ISO
+  });
+});
+
+// Periodic cleanup (every 5 min)
+setInterval(() => {
+  const t = new Date();
+  for (const [code, data] of store.entries()) {
+    if (t > new Date(data.expiresAt)) {
+      store.delete(code);
+    }
+  }
+}, 5 * 60 * 1000);
+
+app.get("/", (req, res) => {
+  res.json({
+    msg: "In-memory URL Shortener running",
+    endpoints: {
+      shorten: "POST /shorten { longUrl, shortCode?, ttlMinutes?, maxClicks? }",
+      redirect: "GET /:code",
+      stats: "GET /stats/:code",
+    },
+  });
+});
+
+app.listen(PORT, () => console.log(`Server running at ${BASE}`));
